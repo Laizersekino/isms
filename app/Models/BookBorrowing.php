@@ -18,12 +18,14 @@ class BookBorrowing extends Model
         'returned_date',
         'status',
         'remarks',
+        'renewal_count',
     ];
 
     protected $casts = [
         'borrowed_date' => 'date',
         'due_date' => 'date',
         'returned_date' => 'date',
+        'renewal_count' => 'integer',
     ];
 
     public function bookCopy(): BelongsTo
