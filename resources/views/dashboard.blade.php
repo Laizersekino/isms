@@ -32,6 +32,18 @@
             font-size: 22px;
         }
 
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .navbar-link {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
         .logout-button {
             background: #dc2626;
             color: white;
@@ -72,13 +84,31 @@
 
     <h1>Integrated School Management System</h1>
 
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
+    <div class="navbar-links">
+        @php($user = auth()->user())
 
-        <button type="submit" class="logout-button">
-            Logout
-        </button>
-    </form>
+        @if(
+            $user->hasRole('Student') ||
+            $user->hasRole('Parent') ||
+            $user->hasPermission('student.portal') ||
+            $user->hasPermission('parent.portal') ||
+            $user->hasPermission('students.view') ||
+            $user->hasPermission('reports.view') ||
+            $user->hasPermission('marks.view')
+        )
+            <a href="{{ route('student-results.index') }}" class="navbar-link">
+                Student Results
+            </a>
+        @endif
+
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+
+            <button type="submit" class="logout-button">
+                Logout
+            </button>
+        </form>
+    </div>
 
 </nav>
 

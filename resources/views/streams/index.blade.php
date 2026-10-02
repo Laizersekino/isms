@@ -4,6 +4,10 @@
 
 <h1>Streams</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 <a href="{{ route('streams.create') }}" class="primary">
     Create Stream
 </a>
@@ -30,9 +34,11 @@
                 <td>{{ $stream->status }}</td>
 
                 <td>
-                    <a href="{{ route('streams.edit', $stream) }}">
-                        Edit
-                    </a>
+                    @if(auth()->user()->hasPermission('academic_structure.update'))
+                        <a href="{{ route('streams.edit', $stream) }}">
+                            Edit
+                        </a>
+                    @endif
 
                     <form
                         action="{{ route('streams.destroy', $stream) }}"

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Exam;
 use App\Models\AcademicYear;
+use App\Models\Exam;
 use App\Models\Term;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ExamController extends Controller
 {
@@ -13,10 +15,10 @@ class ExamController extends Controller
     {
         $exams = Exam::with([
             'academicYear',
-            'term'
+            'term',
         ])
-        ->orderByDesc('id')
-        ->get();
+            ->orderByDesc('id')
+            ->get();
 
         return view('exams.index', compact('exams'));
     }
@@ -38,44 +40,44 @@ class ExamController extends Controller
             'name' => [
                 'required',
                 'string',
-                'max:100'
+                'max:100',
             ],
 
             'exam_type' => [
                 'required',
                 'string',
-                'max:50'
+                'max:50',
             ],
 
             'academic_year_id' => [
                 'required',
-                'exists:academic_years,id'
+                'exists:academic_years,id',
             ],
 
             'term_id' => [
                 'required',
-                'exists:terms,id'
+                'exists:terms,id',
             ],
 
             'start_date' => [
                 'required',
-                'date'
+                'date',
             ],
 
             'end_date' => [
                 'required',
                 'date',
-                'after_or_equal:start_date'
+                'after_or_equal:start_date',
             ],
 
             'description' => [
                 'nullable',
-                'string'
+                'string',
             ],
 
             'status' => [
                 'required',
-                'in:Draft,Active,Completed,Cancelled'
+                'in:Draft,Active,Completed,Cancelled',
             ],
         ]);
 
@@ -104,44 +106,44 @@ class ExamController extends Controller
             'name' => [
                 'required',
                 'string',
-                'max:100'
+                'max:100',
             ],
 
             'exam_type' => [
                 'required',
                 'string',
-                'max:50'
+                'max:50',
             ],
 
             'academic_year_id' => [
                 'required',
-                'exists:academic_years,id'
+                'exists:academic_years,id',
             ],
 
             'term_id' => [
                 'required',
-                'exists:terms,id'
+                'exists:terms,id',
             ],
 
             'start_date' => [
                 'required',
-                'date'
+                'date',
             ],
 
             'end_date' => [
                 'required',
                 'date',
-                'after_or_equal:start_date'
+                'after_or_equal:start_date',
             ],
 
             'description' => [
                 'nullable',
-                'string'
+                'string',
             ],
 
             'status' => [
                 'required',
-                'in:Draft,Active,Completed,Cancelled'
+                'in:Draft,Active,Completed,Cancelled',
             ],
         ]);
 
@@ -154,7 +156,20 @@ class ExamController extends Controller
 
     public function destroy(Exam $exam)
     {
-        $exam->delete();
+        DB::transaction(function () use ($exam): void {
+            $exam = Exam::query()->lockForUpdate()->findOrFail($exam->id);
+
+            if (
+                $exam->examSubjects()->exists()
+                || $exam->resultPublications()->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This exam cannot be deleted because exam subjects, marks, or result publications exist.',
+                ]);
+            }
+
+            $exam->delete();
+        });
 
         return redirect()
             ->route('exams.index')

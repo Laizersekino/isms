@@ -4,6 +4,10 @@
 
 <h1>Exams</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 @if(auth()->user()->hasPermission('marks.create'))
     <p>
         <a href="{{ route('exams.create') }}" class="primary">

@@ -4,6 +4,10 @@
 
 <h1>Academic Years</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 <a href="{{ route('dashboard') }}">Dashboard</a>
 <a href="{{ route('academic-years.create') }}" class="primary">
     Add Academic Year
@@ -30,12 +34,14 @@
             <td>{{ $year->status }}</td>
 
             <td>
-                <a
-                    href="{{ route('academic-years.edit', $year) }}"
-                    class="warning"
-                >
-                    Edit
-                </a>
+                @if(auth()->user()->hasPermission('academic_structure.update'))
+                    <a
+                        href="{{ route('academic-years.edit', $year) }}"
+                        class="warning"
+                    >
+                        Edit
+                    </a>
+                @endif
 
                 <form
                     action="{{ route('academic-years.destroy', $year) }}"

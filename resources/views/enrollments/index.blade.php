@@ -4,6 +4,10 @@
 
 <h1>Student Enrollments</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 <a href="{{ route('dashboard') }}">Dashboard</a>
 
 <a href="{{ route('enrollments.create') }}" class="primary">
@@ -58,12 +62,14 @@
 
             <td>
 
-                <a
-                    href="{{ route('enrollments.edit', $enrollment) }}"
-                    class="warning"
-                >
-                    Edit
-                </a>
+                @if(auth()->user()->hasPermission('enrollments.update'))
+                    <a
+                        href="{{ route('enrollments.edit', $enrollment) }}"
+                        class="warning"
+                    >
+                        Edit
+                    </a>
+                @endif
 
                 <form
                     action="{{ route('enrollments.destroy', $enrollment) }}"

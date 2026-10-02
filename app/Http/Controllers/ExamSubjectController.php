@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassRoom;
 use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\Subject;
-use App\Models\ClassRoom;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ExamSubjectController extends Controller
 {
@@ -15,10 +17,10 @@ class ExamSubjectController extends Controller
         $examSubjects = ExamSubject::with([
             'exam',
             'subject',
-            'classRoom'
+            'classRoom',
         ])
-        ->orderByDesc('id')
-        ->get();
+            ->orderByDesc('id')
+            ->get();
 
         return view(
             'exam_subjects.index',
@@ -53,23 +55,23 @@ class ExamSubjectController extends Controller
         $validated = $request->validate([
             'exam_id' => [
                 'required',
-                'exists:exams,id'
+                'exists:exams,id',
             ],
 
             'subject_id' => [
                 'required',
-                'exists:subjects,id'
+                'exists:subjects,id',
             ],
 
             'class_id' => [
                 'required',
-                'exists:classes,id'
+                'exists:classes,id',
             ],
 
             'max_marks' => [
                 'required',
                 'numeric',
-                'min:1'
+                'min:1',
             ],
         ]);
 
@@ -82,8 +84,7 @@ class ExamSubjectController extends Controller
         if ($exists) {
             return back()
                 ->withErrors([
-                    'subject_id' =>
-                        'This subject has already been added to this exam for this class.'
+                    'subject_id' => 'This subject has already been added to this exam for this class.',
                 ])
                 ->withInput();
         }
@@ -100,7 +101,23 @@ class ExamSubjectController extends Controller
 
     public function destroy(ExamSubject $examSubject)
     {
-        $examSubject->delete();
+        DB::transaction(function () use ($examSubject): void {
+            $examSubject = ExamSubject::query()->lockForUpdate()->findOrFail($examSubject->id);
+
+            if (
+                $examSubject->marks()->exists()
+                || DB::table('result_publications')
+                    ->where('exam_id', $examSubject->exam_id)
+                    ->where('class_id', $examSubject->class_id)
+                    ->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This exam subject cannot be deleted because marks or published results exist.',
+                ]);
+            }
+
+            $examSubject->delete();
+        });
 
         return redirect()
             ->route('exam-subjects.index')

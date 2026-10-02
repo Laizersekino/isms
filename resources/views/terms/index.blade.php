@@ -4,6 +4,10 @@
 
 <h1>Terms</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 <a href="{{ route('dashboard') }}">Dashboard</a>
 <a href="{{ route('terms.create') }}" class="primary">Add Term</a>
 
@@ -37,12 +41,14 @@
 
     <td>
 
-        <a
-            href="{{ route('terms.edit', $term) }}"
-            class="warning"
-        >
-            Edit
-        </a>
+        @if(auth()->user()->hasPermission('academic_structure.update'))
+            <a
+                href="{{ route('terms.edit', $term) }}"
+                class="warning"
+            >
+                Edit
+            </a>
+        @endif
 
         <form
             action="{{ route('terms.destroy', $term) }}"

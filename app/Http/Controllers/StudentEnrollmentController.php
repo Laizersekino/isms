@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Student;
-use App\Models\StudentEnrollment;
 use App\Models\AcademicYear;
 use App\Models\ClassRoom;
 use App\Models\Stream;
+use App\Models\Student;
+use App\Models\StudentEnrollment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class StudentEnrollmentController extends Controller
 {
@@ -17,10 +19,10 @@ class StudentEnrollmentController extends Controller
             'student',
             'academicYear',
             'classRoom',
-            'stream'
+            'stream',
         ])
-        ->orderByDesc('id')
-        ->get();
+            ->orderByDesc('id')
+            ->get();
 
         return view('enrollments.index', compact('enrollments'));
     }
@@ -64,7 +66,7 @@ class StudentEnrollmentController extends Controller
         if ($alreadyEnrolled) {
             return back()
                 ->withErrors([
-                    'student_id' => 'This student is already enrolled for this academic year.'
+                    'student_id' => 'This student is already enrolled for this academic year.',
                 ])
                 ->withInput();
         }
@@ -117,7 +119,7 @@ class StudentEnrollmentController extends Controller
         if ($alreadyEnrolled) {
             return back()
                 ->withErrors([
-                    'student_id' => 'This student is already enrolled for this academic year.'
+                    'student_id' => 'This student is already enrolled for this academic year.',
                 ])
                 ->withInput();
         }
@@ -131,7 +133,37 @@ class StudentEnrollmentController extends Controller
 
     public function destroy(StudentEnrollment $enrollment)
     {
-        $enrollment->delete();
+        DB::transaction(function () use ($enrollment): void {
+            $enrollment = StudentEnrollment::query()
+                ->lockForUpdate()
+                ->findOrFail($enrollment->id);
+
+            $hasAttendance = DB::table('attendance')
+                ->where('student_id', $enrollment->student_id)
+                ->where('academic_year_id', $enrollment->academic_year_id)
+                ->where('class_id', $enrollment->class_id)
+                ->exists();
+            $hasMarks = DB::table('marks')
+                ->join('exam_subjects', 'marks.exam_subject_id', '=', 'exam_subjects.id')
+                ->join('exams', 'exam_subjects.exam_id', '=', 'exams.id')
+                ->where('marks.student_id', $enrollment->student_id)
+                ->where('exam_subjects.class_id', $enrollment->class_id)
+                ->where('exams.academic_year_id', $enrollment->academic_year_id)
+                ->exists();
+            $hasPublishedResults = DB::table('result_publications')
+                ->join('exams', 'result_publications.exam_id', '=', 'exams.id')
+                ->where('result_publications.class_id', $enrollment->class_id)
+                ->where('exams.academic_year_id', $enrollment->academic_year_id)
+                ->exists();
+
+            if ($hasAttendance || $hasMarks || $hasPublishedResults) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This enrollment cannot be deleted because attendance, marks, or result publication records exist. Keep the enrollment for historical reporting.',
+                ]);
+            }
+
+            $enrollment->delete();
+        });
 
         return redirect()
             ->route('enrollments.index')

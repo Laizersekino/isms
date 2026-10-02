@@ -6,7 +6,6 @@
 
 <form action="{{ route('attendance.create') }}" method="GET">
 
-```
 <div>
     <label for="assignment_id">Teacher Assignment:</label><br>
 
@@ -38,13 +37,11 @@
 <button type="submit" class="primary">
     Load Students
 </button>
-```
 
 </form>
 
 @if($selectedAssignment)
 
-```
 <hr>
 
 <h2>
@@ -58,6 +55,10 @@
 <form action="{{ route('attendance.store') }}" method="POST">
 
     @csrf
+
+    <input type="hidden"
+           name="assignment_id"
+           value="{{ $selectedAssignment->id }}">
 
     <input type="hidden"
            name="academic_year_id"
@@ -173,7 +174,6 @@
     @endif
 
 </form>
-```
 
 @endif
 

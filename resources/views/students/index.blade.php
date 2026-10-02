@@ -45,6 +45,14 @@
             border-radius: 5px;
         }
 
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -102,6 +110,17 @@
         </div>
     @endif
 
+    @if ($errors->has('student'))
+        <div class="error">
+            {{ $errors->first('student') }}
+        </div>
+    @endif
+    @if ($errors->has('delete'))
+        <div class="error">
+            {{ $errors->first('delete') }}
+        </div>
+    @endif
+
     <table>
 
         <thead>
@@ -154,6 +173,22 @@
                             </button>
 
                         </form>
+
+                        @if ($canManageStudentPortalAccounts)
+                            @php($studentEmailKey = mb_strtolower(trim((string) $student->email)))
+                            @if ($student->email && in_array($studentEmailKey, $uniqueStudentEmails, true) && (! in_array($studentEmailKey, $existingUserEmails, true) || in_array($studentEmailKey, $studentPortalEmails, true)))
+                                <form method="POST"
+                                      action="{{ route('students.portal-account.store', $student) }}"
+                                      style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="edit-button">
+                                        {{ in_array($studentEmailKey, $studentPortalEmails, true) ? 'Send password setup link' : 'Create portal account' }}
+                                    </button>
+                                </form>
+                            @elseif ($student->email && in_array($studentEmailKey, $existingUserEmails, true))
+                                <span>Existing user account requires review</span>
+                            @endif
+                        @endif
 
                     </td>
                 </tr>

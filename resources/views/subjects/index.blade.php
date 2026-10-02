@@ -4,6 +4,10 @@
 
 <h1>Subjects</h1>
 
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
+@endif
+
 <a href="{{ route('subjects.create') }}" class="primary">
     Create Subject
 </a>
@@ -12,6 +16,9 @@
     <div class="success">
         {{ session('success') }}
     </div>
+@endif
+@if ($errors->has('delete'))
+    <div class="error">{{ $errors->first('delete') }}</div>
 @endif
 
 <table>
@@ -36,9 +43,11 @@
                 <td>{{ $subject->status }}</td>
 
                 <td>
-                    <a href="{{ route('subjects.edit', $subject) }}">
-                        Edit
-                    </a>
+                    @if(auth()->user()->hasPermission('academic_structure.update'))
+                        <a href="{{ route('subjects.edit', $subject) }}">
+                            Edit
+                        </a>
+                    @endif
 
                     <form action="{{ route('subjects.destroy', $subject) }}"
                           method="POST"

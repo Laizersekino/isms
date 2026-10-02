@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Stream;
+use App\Models\Attendance;
 use App\Models\ClassRoom;
+use App\Models\Stream;
+use App\Models\TeacherAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class StreamController extends Controller
 {
@@ -63,7 +67,21 @@ class StreamController extends Controller
 
     public function destroy(Stream $stream)
     {
-        $stream->delete();
+        DB::transaction(function () use ($stream): void {
+            $stream = Stream::query()->lockForUpdate()->findOrFail($stream->id);
+
+            if (
+                $stream->enrollments()->exists()
+                || Attendance::query()->where('stream_id', $stream->id)->exists()
+                || TeacherAssignment::query()->where('stream_id', $stream->id)->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This stream cannot be deleted because enrollments, attendance, teacher assignments, or other dependent records exist.',
+                ]);
+            }
+
+            $stream->delete();
+        });
 
         return redirect()
             ->route('streams.index')

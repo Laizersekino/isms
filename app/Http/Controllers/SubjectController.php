@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SubjectController extends Controller
 {
@@ -47,7 +49,7 @@ class SubjectController extends Controller
                 'required',
                 'string',
                 'max:30',
-                'unique:subjects,code,' . $subject->id
+                'unique:subjects,code,'.$subject->id,
             ],
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
@@ -63,7 +65,22 @@ class SubjectController extends Controller
 
     public function destroy(Subject $subject)
     {
-        $subject->delete();
+        DB::transaction(function () use ($subject): void {
+            $subject = Subject::query()->lockForUpdate()->findOrFail($subject->id);
+
+            if (
+                $subject->examSubjects()->exists()
+                || $subject->classes()->exists()
+                || $subject->teachers()->exists()
+                || DB::table('teacher_assignments')->where('subject_id', $subject->id)->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This subject cannot be deleted because exam results, class links, teacher links, or other dependent records exist.',
+                ]);
+            }
+
+            $subject->delete();
+        });
 
         return redirect()
             ->route('subjects.index')

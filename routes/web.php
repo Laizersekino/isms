@@ -1,29 +1,31 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\AcademicYearController;
 // =====================================================
 // CONTROLLERS
 // =====================================================
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\TeacherController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\AcademicYearController;
-use App\Http\Controllers\TermController;
-use App\Http\Controllers\ClassRoomController;
-use App\Http\Controllers\StreamController;
-use App\Http\Controllers\SubjectController;
-use App\Http\Controllers\TeacherSubjectController;
-use App\Http\Controllers\ClassSubjectController;
-use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\TeacherAssignmentController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassRoomController;
+use App\Http\Controllers\ClassSubjectController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\MarkController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ResultPublicationController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StreamController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentEnrollmentController;
+use App\Http\Controllers\StudentPortalAccountController;
+use App\Http\Controllers\StudentResultController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TeacherAssignmentController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TeacherSubjectController;
+use App\Http\Controllers\TermController;
+use Illuminate\Support\Facades\Route;
 
 // =====================================================
 // AUTHENTICATION
@@ -39,6 +41,13 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'create'])
+    ->middleware('guest')
+    ->name('password.reset');
+
+Route::post('/reset-password', [PasswordResetController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.update');
 
 // =====================================================
 // DASHBOARD
@@ -47,9 +56,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::get('/dashboard', function () {
     return view('dashboard');
 })
-->middleware('auth')
-->name('dashboard');
-
+    ->middleware('auth')
+    ->name('dashboard');
 
 // =====================================================
 // STUDENTS
@@ -77,12 +85,15 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:students.update')
         ->name('students.update');
 
+    Route::post('/students/{student}/portal-account', [StudentPortalAccountController::class, 'store'])
+        ->middleware('permission:students.portal_accounts.manage')
+        ->name('students.portal-account.store');
+
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('students.destroy');
 
 });
-
 
 // =====================================================
 // TEACHERS
@@ -116,7 +127,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 // =====================================================
 // STAFF
 // =====================================================
@@ -145,7 +155,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 // =====================================================
 // ACADEMIC YEARS
 // =====================================================
@@ -165,11 +174,11 @@ Route::middleware('auth')->group(function () {
         ->name('academic-years.store');
 
     Route::get('/academic-years/{academicYear}/edit', [AcademicYearController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('academic-years.edit');
 
     Route::put('/academic-years/{academicYear}', [AcademicYearController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('academic-years.update');
 
     Route::delete('/academic-years/{academicYear}', [AcademicYearController::class, 'destroy'])
@@ -177,7 +186,6 @@ Route::middleware('auth')->group(function () {
         ->name('academic-years.destroy');
 
 });
-
 
 // =====================================================
 // TERMS
@@ -198,11 +206,11 @@ Route::middleware('auth')->group(function () {
         ->name('terms.store');
 
     Route::get('/terms/{term}/edit', [TermController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('terms.edit');
 
     Route::put('/terms/{term}', [TermController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('terms.update');
 
     Route::delete('/terms/{term}', [TermController::class, 'destroy'])
@@ -210,7 +218,6 @@ Route::middleware('auth')->group(function () {
         ->name('terms.destroy');
 
 });
-
 
 // =====================================================
 // CLASSES
@@ -231,11 +238,11 @@ Route::middleware('auth')->group(function () {
         ->name('classes.store');
 
     Route::get('/classes/{class}/edit', [ClassRoomController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('classes.edit');
 
     Route::put('/classes/{class}', [ClassRoomController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('classes.update');
 
     Route::delete('/classes/{class}', [ClassRoomController::class, 'destroy'])
@@ -243,7 +250,6 @@ Route::middleware('auth')->group(function () {
         ->name('classes.destroy');
 
 });
-
 
 // =====================================================
 // STREAMS
@@ -264,11 +270,11 @@ Route::middleware('auth')->group(function () {
         ->name('streams.store');
 
     Route::get('/streams/{stream}/edit', [StreamController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('streams.edit');
 
     Route::put('/streams/{stream}', [StreamController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('streams.update');
 
     Route::delete('/streams/{stream}', [StreamController::class, 'destroy'])
@@ -276,7 +282,6 @@ Route::middleware('auth')->group(function () {
         ->name('streams.destroy');
 
 });
-
 
 // =====================================================
 // SUBJECTS
@@ -297,11 +302,11 @@ Route::middleware('auth')->group(function () {
         ->name('subjects.store');
 
     Route::get('/subjects/{subject}/edit', [SubjectController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('subjects.edit');
 
     Route::put('/subjects/{subject}', [SubjectController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:academic_structure.update')
         ->name('subjects.update');
 
     Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])
@@ -309,7 +314,6 @@ Route::middleware('auth')->group(function () {
         ->name('subjects.destroy');
 
 });
-
 
 // =====================================================
 // TEACHER ↔ SUBJECT
@@ -338,7 +342,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 // =====================================================
 // CLASS ↔ SUBJECT
 // =====================================================
@@ -366,7 +369,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 // =====================================================
 // STUDENT ENROLLMENT
 // =====================================================
@@ -386,11 +388,11 @@ Route::middleware('auth')->group(function () {
         ->name('enrollments.store');
 
     Route::get('/enrollments/{enrollment}/edit', [StudentEnrollmentController::class, 'edit'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:enrollments.update')
         ->name('enrollments.edit');
 
     Route::put('/enrollments/{enrollment}', [StudentEnrollmentController::class, 'update'])
-        ->middleware('permission:students.update')
+        ->middleware('permission:enrollments.update')
         ->name('enrollments.update');
 
     Route::delete('/enrollments/{enrollment}', [StudentEnrollmentController::class, 'destroy'])
@@ -399,7 +401,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 // =====================================================
 // ATTENDANCE
 // =====================================================
@@ -407,25 +408,30 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::get('/attendance', [AttendanceController::class, 'index'])
+        ->middleware('permission:attendance.view')
         ->name('attendance.index');
 
     Route::get('/attendance/create', [AttendanceController::class, 'create'])
+        ->middleware('permission:attendance.create')
         ->name('attendance.create');
 
     Route::post('/attendance', [AttendanceController::class, 'store'])
+        ->middleware('permission:attendance.create')
         ->name('attendance.store');
 
     Route::get('/attendance/{attendance}/edit', [AttendanceController::class, 'edit'])
+        ->middleware('permission:attendance.update')
         ->name('attendance.edit');
 
-    Route::put('/attendance/{attendance}', [AttendanceController::class, 'update'])
+    Route::match(['put', 'patch'], '/attendance/{attendance}', [AttendanceController::class, 'update'])
+        ->middleware('permission:attendance.update')
         ->name('attendance.update');
 
     Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy'])
+        ->middleware('permission:attendance.update')
         ->name('attendance.destroy');
 
 });
-
 
 // =====================================================
 // TEACHER ASSIGNMENTS
@@ -458,7 +464,6 @@ Route::middleware('auth')->group(function () {
         ->name('teacher-assignments.destroy');
 
 });
-
 
 // =====================================================
 // FUTURE MODULES
@@ -506,51 +511,59 @@ Route::middleware('auth')->group(function () {
     Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])
         ->middleware('permission:marks.delete')
         ->name('exams.destroy');
-        // Exam Subjects
+    // Exam Subjects
 
-Route::get('/exam-subjects', [ExamSubjectController::class, 'index'])
-    ->middleware('permission:marks.view')
-    ->name('exam-subjects.index');
+    Route::get('/exam-subjects', [ExamSubjectController::class, 'index'])
+        ->middleware('permission:marks.view')
+        ->name('exam-subjects.index');
 
-Route::get('/exam-subjects/create', [ExamSubjectController::class, 'create'])
-    ->middleware('permission:marks.create')
-    ->name('exam-subjects.create');
+    Route::get('/exam-subjects/create', [ExamSubjectController::class, 'create'])
+        ->middleware('permission:marks.create')
+        ->name('exam-subjects.create');
 
-Route::post('/exam-subjects', [ExamSubjectController::class, 'store'])
-    ->middleware('permission:marks.create')
-    ->name('exam-subjects.store');
+    Route::post('/exam-subjects', [ExamSubjectController::class, 'store'])
+        ->middleware('permission:marks.create')
+        ->name('exam-subjects.store');
 
-Route::delete('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy'])
-    ->middleware('permission:marks.delete')
-    ->name('exam-subjects.destroy');
+    Route::delete('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy'])
+        ->middleware('permission:marks.delete')
+        ->name('exam-subjects.destroy');
     // Marks
 
-Route::get('/marks', [MarkController::class, 'index'])
-    ->middleware('permission:marks.view')
-    ->name('marks.index');
+    Route::get('/marks', [MarkController::class, 'index'])
+        ->middleware('permission:marks.view')
+        ->name('marks.index');
 
-Route::get('/marks/create', [MarkController::class, 'create'])
-    ->middleware('permission:marks.create')
-    ->name('marks.create');
+    Route::get('/marks/create', [MarkController::class, 'create'])
+        ->middleware('permission:marks.create')
+        ->name('marks.create');
 
-Route::post('/marks', [MarkController::class, 'store'])
-    ->middleware('permission:marks.create')
-    ->name('marks.store');
- Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
-    ->middleware('permission:marks.approve')
-    ->name('marks.approve');
- Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
-    ->middleware('permission:marks.approve')
-    ->name('marks.approve');
+    Route::post('/marks', [MarkController::class, 'store'])
+        ->middleware('permission:marks.create')
+        ->name('marks.store');
+    Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
+        ->middleware('permission:marks.approve')
+        ->name('marks.approve');
+    Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
+        ->middleware('permission:marks.approve')
+        ->name('marks.approve');
     Route::get('/result-publications', [ResultPublicationController::class, 'index'])
-    ->middleware('permission:marks.view')
-    ->name('result-publications.index');
+        ->middleware('permission:marks.view')
+        ->name('result-publications.index');
 
-Route::get('/result-publications/create', [ResultPublicationController::class, 'create'])
-    ->middleware('permission:results.publish')
-    ->name('result-publications.create');
+    Route::get('/result-publications/create', [ResultPublicationController::class, 'create'])
+        ->middleware('permission:results.publish')
+        ->name('result-publications.create');
 
-Route::post('/result-publications', [ResultPublicationController::class, 'store'])
-    ->middleware('permission:results.publish')
-    ->name('result-publications.store');
+    Route::post('/result-publications', [ResultPublicationController::class, 'store'])
+        ->middleware('permission:results.publish')
+        ->name('result-publications.store');
+
+    Route::get('/student-results', [StudentResultController::class, 'index'])
+        ->middleware('auth')
+        ->name('student-results.index');
+
+    Route::get('/student-results/{student}/print', [StudentResultController::class, 'printResult'])
+        ->middleware('auth')
+        ->name('student-results.print');
 });
