@@ -1,23 +1,36 @@
 <?php
 
+use App\Http\Controllers\AcademicReportController;
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\AnnouncementController;
 // =====================================================
 // CONTROLLERS
 // =====================================================
 
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookBorrowingController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookCopyController;
+use App\Http\Controllers\ClassPerformanceReportController;
 use App\Http\Controllers\ClassRoomController;
 use App\Http\Controllers\ClassSubjectController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\FeeStructureController;
+use App\Http\Controllers\FinanceReportController;
+use App\Http\Controllers\LibraryFineController;
 use App\Http\Controllers\MarkController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ResultPublicationController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentEnrollmentController;
+use App\Http\Controllers\StudentFeeController;
 use App\Http\Controllers\StudentPortalAccountController;
 use App\Http\Controllers\StudentResultController;
 use App\Http\Controllers\SubjectController;
@@ -25,11 +38,16 @@ use App\Http\Controllers\TeacherAssignmentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\TeacherSubjectController;
 use App\Http\Controllers\TermController;
+use App\Models\Announcement;
 use Illuminate\Support\Facades\Route;
 
 // =====================================================
 // AUTHENTICATION
 // =====================================================
+
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+})->name('home');
 
 Route::get('/login', [AuthController::class, 'showLogin'])
     ->name('login');
@@ -40,6 +58,11 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
 
 Route::get('/reset-password/{token}', [PasswordResetController::class, 'create'])
     ->middleware('guest')
@@ -54,7 +77,19 @@ Route::post('/reset-password', [PasswordResetController::class, 'store'])
 // =====================================================
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $user = auth()->user();
+    $recentAnnouncements = Announcement::query()
+        ->visible()
+        ->forUser($user)
+        ->withCount([
+            'reads as is_read' => fn ($query) => $query->where('user_id', $user->id),
+        ])
+        ->orderByDesc('is_pinned')
+        ->orderByDesc('published_at')
+        ->limit(5)
+        ->get(['id', 'title', 'category', 'is_pinned', 'published_at']);
+
+    return view('dashboard', compact('recentAnnouncements'));
 })
     ->middleware('auth')
     ->name('dashboard');
@@ -93,6 +128,104 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:students.delete')
         ->name('students.destroy');
 
+});
+
+// =====================================================
+// LIBRARY BOOKS
+// =====================================================
+
+Route::middleware('auth')->group(function () {
+    Route::resource('announcements', AnnouncementController::class);
+
+    Route::post('announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])
+        ->name('announcements.publish');
+
+    Route::post('announcements/{announcement}/archive', [AnnouncementController::class, 'archive'])
+        ->name('announcements.archive');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('books', BookController::class);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('book-copies', BookCopyController::class);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('book-borrowings', BookBorrowingController::class)
+        ->only(['index', 'create', 'store', 'show']);
+
+    Route::post('book-borrowings/{bookBorrowing}/return', [BookBorrowingController::class, 'returnBook'])
+        ->name('book-borrowings.return');
+
+    Route::post('book-borrowings/{bookBorrowing}/renew', [BookBorrowingController::class, 'renew'])
+        ->name('book-borrowings.renew');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('library-fines', LibraryFineController::class)
+        ->only(['index', 'show']);
+
+    Route::post('library-fines/{libraryFine}/pay', [LibraryFineController::class, 'pay'])
+        ->name('library-fines.pay');
+
+    Route::post('library-fines/{libraryFine}/waive', [LibraryFineController::class, 'waive'])
+        ->name('library-fines.waive');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('fee-structures', FeeStructureController::class);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('student-fees/generate', [StudentFeeController::class, 'generateForm'])
+        ->name('student-fees.generate-form');
+
+    Route::post('student-fees/generate', [StudentFeeController::class, 'generate'])
+        ->name('student-fees.generate');
+
+    Route::resource('student-fees', StudentFeeController::class)
+        ->only(['index', 'show', 'destroy']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('payments', PaymentController::class)
+        ->only(['index', 'create', 'store', 'show']);
+
+    Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse'])
+        ->name('payments.reverse');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('receipts/{payment}', [ReceiptController::class, 'show'])
+        ->name('receipts.show');
+
+    Route::get('receipts/{payment}/pdf', [ReceiptController::class, 'pdf'])
+        ->name('receipts.pdf');
+
+    Route::get('receipts/{payment}/print', [ReceiptController::class, 'print'])
+        ->name('receipts.print');
+});
+
+Route::middleware('auth')->prefix('reports/finance')->name('reports.finance.')->group(function () {
+    Route::get('collection-summary', [FinanceReportController::class, 'collectionSummary'])
+        ->name('collection-summary');
+
+    Route::get('outstanding', [FinanceReportController::class, 'outstanding'])
+        ->name('outstanding');
+
+    Route::get('daily-collection', [FinanceReportController::class, 'dailyCollection'])
+        ->name('daily-collection');
+
+    Route::get('class-collection', [FinanceReportController::class, 'classCollection'])
+        ->name('class-collection');
+
+    Route::get('payment-methods', [FinanceReportController::class, 'paymentMethods'])
+        ->name('payment-methods');
+
+    Route::get('student-statement/{student}', [FinanceReportController::class, 'studentStatement'])
+        ->name('student-statement');
 });
 
 // =====================================================
@@ -566,4 +699,42 @@ Route::middleware('auth')->group(function () {
     Route::get('/student-results/{student}/print', [StudentResultController::class, 'printResult'])
         ->middleware('auth')
         ->name('student-results.print');
+
+    Route::get('/academic-reports/{student}', [AcademicReportController::class, 'show'])
+        ->middleware('permission:reports.academic.view')
+        ->name('academic-reports.show');
+
+    Route::get('/academic-reports/{student}/print', [AcademicReportController::class, 'print'])
+        ->middleware('permission:reports.academic.export')
+        ->name('academic-reports.print');
+
+    Route::get('/academic-reports/{student}/pdf', [AcademicReportController::class, 'pdf'])
+        ->middleware('permission:reports.academic.export')
+        ->name('academic-reports.pdf');
+
+    Route::prefix('reports/academic')->name('reports.academic.')->group(function () {
+        Route::get('students/{student}', [AcademicReportController::class, 'show'])
+            ->middleware('permission:reports.academic.view')
+            ->name('student');
+
+        Route::get('students/{student}/pdf', [AcademicReportController::class, 'pdf'])
+            ->middleware('permission:reports.academic.export')
+            ->name('student.pdf');
+
+        Route::get('students/{student}/print', [AcademicReportController::class, 'print'])
+            ->middleware('permission:reports.academic.export')
+            ->name('student.print');
+
+        Route::get('class-performance/{class}', [ClassPerformanceReportController::class, 'classPerformance'])
+            ->middleware('permission:reports.academic.view')
+            ->name('class-performance');
+
+        Route::get('class-performance/{class}/pdf', [ClassPerformanceReportController::class, 'classPerformancePdf'])
+            ->middleware('permission:reports.academic.export')
+            ->name('class-performance.pdf');
+
+        Route::get('class-performance/{class}/print', [ClassPerformanceReportController::class, 'classPerformancePrint'])
+            ->middleware('permission:reports.academic.export')
+            ->name('class-performance.print');
+    });
 });
