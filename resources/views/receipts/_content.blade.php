@@ -27,7 +27,7 @@
     </header>
 
     <section class="receipt-heading">
-        <div>
+        <div class="receipt-title">
             <h2>PAYMENT RECEIPT</h2>
             <p class="receipt-number">{{ $payment->receipt_number }}</p>
         </div>

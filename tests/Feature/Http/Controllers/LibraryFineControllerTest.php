@@ -96,6 +96,8 @@ class LibraryFineControllerTest extends TestCase
 
     public function test_fines_pay_permission_marks_an_unpaid_fine_as_paid(): void
     {
+        $this->travelTo('2026-10-02');
+
         $user = $this->userWithPermissions(['fines.pay']);
         $fine = $this->createFine();
 
@@ -144,6 +146,8 @@ class LibraryFineControllerTest extends TestCase
 
     public function test_fines_waive_permission_waives_an_unpaid_fine_with_a_reason(): void
     {
+        $this->travelTo('2026-10-02');
+
         $user = $this->userWithPermissions(['fines.waive']);
         $fine = $this->createFine();
         $reason = 'Approved after review.';

@@ -16,7 +16,7 @@
                 @method('PUT')
                 <x-form.input name="name" label="Full name" :value="$user->name" autocomplete="name" required />
                 <x-form.input name="email" label="Email address" type="email" :value="$user->email" autocomplete="email" required />
-                <x-button type="submit">Save changes</x-button>
+                <x-button type="submit" icon="arrow-down-tray">Save changes</x-button>
             </form>
         </x-card>
 

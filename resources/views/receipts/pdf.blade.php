@@ -1,8 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Receipt {{ $payment->receipt_number }}</title>
+@extends('layouts.pdf')
+
+@section('title', 'Receipt '.$payment->receipt_number)
+
+@push('styles')
     <style>
         @page { margin: 28px; }
         body { color: #222; font-family: DejaVu Sans, sans-serif; font-size: 11px; }
@@ -17,9 +17,9 @@
         .receipt-date { line-height: 1.5; }
         .detail-section { margin-top: 10px; }
         .detail-section h3, .reversal-section h3 { border-bottom: 1px solid #bbb; font-size: 12px; padding-bottom: 4px; }
-        table { border-collapse: collapse; margin: 6px 0 10px; width: 100%; }
-        th, td { border: 1px solid #aaa; padding: 6px; text-align: left; }
-        th { background: #eee; }
+        .receipt table { border-collapse: collapse; margin: 6px 0 10px; width: 100%; }
+        .receipt th, .receipt td { border: 1px solid #aaa; padding: 6px; text-align: left; }
+        .receipt th { background: #eee; }
         .payment-amount { font-size: 15px; font-weight: bold; }
         .reversed-banner { background: #a40000; color: white; font-size: 16px; font-weight: bold; margin-bottom: 14px; padding: 9px; text-align: center; }
         .reversal-section { border: 1px solid #a40000; margin-top: 12px; padding: 6px 10px; }
@@ -27,8 +27,8 @@
         .receipt-footer p { font-size: 14px; font-weight: bold; }
         .stamp-area { border: 1px dashed #777; height: 62px; padding: 6px; text-align: center; width: 190px; }
     </style>
-</head>
-<body>
+@endpush
+
+@section('content')
     @include('receipts._content')
-</body>
-</html>
+@endsection

@@ -2,32 +2,32 @@
     $user = auth()->user();
     $menuGroups = [
         'School' => [
-            ['Students', 'students.index', 'students.view'],
-            ['Enrollments', 'enrollments.index', 'students.view'],
-            ['Teachers', 'teachers.index', 'teachers.view'],
+            ['Students', 'students.index', 'students.view', 'users'],
+            ['Enrollments', 'enrollments.index', 'students.view', 'user-group'],
+            ['Teachers', 'teachers.index', 'teachers.view', 'academic-cap'],
         ],
         'Academics' => [
-            ['Classes', 'classes.index', 'academic_structure.update'],
-            ['Terms', 'terms.index', 'academic_structure.update'],
-            ['Streams', 'streams.index', 'academic_structure.update'],
-            ['Attendance', 'attendance.index', 'attendance.view'],
-            ['Exams and marks', 'exams.index', 'marks.view'],
-            ['Student Results', 'student-results.index', 'marks.view'],
+            ['Classes', 'classes.index', 'academic_structure.update', 'home'],
+            ['Terms', 'terms.index', 'academic_structure.update', 'calendar-days'],
+            ['Streams', 'streams.index', 'academic_structure.update', 'user-group'],
+            ['Attendance', 'attendance.index', 'attendance.view', 'clipboard-document-check'],
+            ['Exams and marks', 'exams.index', 'marks.view', 'chart-bar'],
+            ['Student Results', 'student-results.index', 'marks.view', 'academic-cap'],
         ],
         'Library' => [
-            ['Books', 'books.index', 'books.view'],
-            ['Book copies', 'book-copies.index', 'book_copies.view'],
-            ['Borrowings', 'book-borrowings.index', 'borrowings.view'],
-            ['Fines', 'library-fines.index', 'fines.view'],
+            ['Books', 'books.index', 'books.view', 'book-open'],
+            ['Book copies', 'book-copies.index', 'book_copies.view', 'books'],
+            ['Borrowings', 'book-borrowings.index', 'borrowings.view', 'clipboard-document-check'],
+            ['Fines', 'library-fines.index', 'fines.view', 'currency-dollar'],
         ],
         'Finance' => [
-            ['Fee structures', 'fee-structures.index', 'fee_structures.view'],
-            ['Student fees', 'student-fees.index', 'student_fees.view'],
-            ['Payments', 'payments.index', 'payments.view'],
-            ['Finance reports', 'reports.finance.collection-summary', 'reports.finance.view'],
+            ['Fee structures', 'fee-structures.index', 'fee_structures.view', 'currency-dollar'],
+            ['Student fees', 'student-fees.index', 'student_fees.view', 'users'],
+            ['Payments', 'payments.index', 'payments.view', 'currency-dollar'],
+            ['Finance reports', 'reports.finance.collection-summary', 'reports.finance.view', 'chart-bar'],
         ],
         'Communication' => [
-            ['Announcements', 'announcements.index', 'announcements.view'],
+            ['Announcements', 'announcements.index', 'announcements.view', 'megaphone'],
         ],
     ];
     $canSeeResults = $user && (
@@ -48,8 +48,13 @@
     :aria-hidden="!sidebarOpen && window.innerWidth < 1024"
 >
     <div class="flex h-16 items-center justify-between border-b border-white/10 px-5">
-        <a href="{{ route('dashboard') }}" class="font-semibold tracking-wide text-white">
-            {{ config('app.name', 'ISMS') }}
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-3 font-semibold tracking-wide text-white">
+            @if(config('school.logo'))
+                <img src="{{ asset(config('school.logo')) }}" alt="{{ config('school.name', config('app.name', 'ISMS')) }}" class="size-9 rounded-lg object-cover">
+            @else
+                <x-icon name="academic-cap" size="lg" class="text-primary-300" />
+            @endif
+            <span>{{ config('school.name', config('app.name', 'ISMS')) }}</span>
         </a>
         <button type="button" class="rounded-lg p-2 text-slate-300 hover:bg-white/10 lg:hidden" @click="sidebarOpen = false" aria-label="Close navigation">
             <span aria-hidden="true">&times;</span>
@@ -58,10 +63,13 @@
 
     <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Main navigation">
         <a href="{{ route('dashboard') }}" @class([
-            'block rounded-lg px-3 py-2.5 text-sm font-medium transition',
+            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
             'bg-primary-600 text-white' => request()->routeIs('dashboard'),
             'text-slate-300 hover:bg-white/10 hover:text-white' => !request()->routeIs('dashboard'),
-        ])>Dashboard</a>
+        ])>
+            <x-icon name="home" />
+            <span>Dashboard</span>
+        </a>
 
         @foreach($menuGroups as $group => $items)
             @php
@@ -73,14 +81,15 @@
                 <div>
                     <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ $group }}</h2>
                     <ul class="space-y-1">
-                        @foreach($visibleItems as [$label, $routeName])
+                        @foreach($visibleItems as [$label, $routeName, $permission, $icon])
                             <li>
                                 <a href="{{ route($routeName) }}"
                                     @class([
-                                        'block rounded-lg px-3 py-2 text-sm transition',
+                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition',
                                         'bg-white/10 text-white' => request()->routeIs($routeName),
                                         'text-slate-300 hover:bg-white/10 hover:text-white' => !request()->routeIs($routeName),
                                     ])>
+                                    <x-icon :name="$icon" />
                                     {{ $label }}
                                 </a>
                             </li>
@@ -93,7 +102,10 @@
         @if($canSeeResults && \Illuminate\Support\Facades\Route::has('student-results.index') && !$user->hasPermission('marks.view'))
             <div>
                 <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">My portal</h2>
-                <a href="{{ route('student-results.index') }}" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white">Student Results</a>
+                <a href="{{ route('student-results.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white">
+                    <x-icon name="academic-cap" />
+                    Student Results
+                </a>
             </div>
         @endif
     </nav>

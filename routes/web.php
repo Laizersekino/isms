@@ -86,8 +86,8 @@ Route::get('/dashboard', function () {
         ])
         ->orderByDesc('is_pinned')
         ->orderByDesc('published_at')
-        ->limit(5)
-        ->get(['id', 'title', 'category', 'is_pinned', 'published_at']);
+        ->limit(10)
+        ->get(['id', 'title', 'content', 'category', 'is_pinned', 'published_at']);
 
     return view('dashboard', compact('recentAnnouncements'));
 })

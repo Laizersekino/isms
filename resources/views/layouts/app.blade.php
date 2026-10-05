@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name', 'ISMS'))</title>
+    <title>@yield('title', config('school.name', config('app.name', 'ISMS')))</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset(config('school.favicon', 'favicon.svg')) }}">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 font-sans text-slate-900 antialiased">
@@ -31,7 +33,7 @@
             </main>
 
             <footer class="border-t border-slate-200 bg-white px-6 py-4 text-center text-sm text-slate-500">
-                &copy; {{ now()->year }} {{ config('app.name', 'ISMS') }}
+                &copy; {{ now()->year }} {{ config('school.name', config('app.name', 'ISMS')) }}
             </footer>
         </div>
     </div>

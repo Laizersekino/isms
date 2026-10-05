@@ -1,109 +1,67 @@
-@extends('layouts.crud')
+@extends('layouts.app')
 
+@section('title', 'Payments')
 @section('content')
-<style>
-    .status-badge {
-        border-radius: 4px;
-        display: inline-block;
-        font-weight: 600;
-        padding: 3px 8px;
-    }
-
-    .status-completed {
-        background: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .status-reversed {
-        background: #f8d7da;
-        color: #842029;
-    }
-</style>
-
-<h1>Payments</h1>
-
-<p>
-    <a href="{{ route('dashboard') }}">Dashboard</a>
-    @if(auth()->user()->hasPermission('payments.create'))
-        <a href="{{ route('payments.create') }}" class="primary">Record payment</a>
-    @endif
-</p>
-
-<form method="GET" action="{{ route('payments.index') }}">
-    <label for="search">Receipt or reference</label>
-    <input id="search" name="search" type="search" value="{{ $search }}">
-
-    <label for="student_id">Student ID</label>
-    <input id="student_id" name="student_id" type="number" min="1" value="{{ $filters['student_id'] ?? '' }}">
-
-    <label for="student_fee_id">Student fee ID</label>
-    <input id="student_fee_id" name="student_fee_id" type="number" min="1" value="{{ $filters['student_fee_id'] ?? '' }}">
-
-    <label for="status">Status</label>
-    <select id="status" name="status">
-        <option value="">All statuses</option>
-        @foreach(['completed', 'reversed'] as $status)
-            <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
-        @endforeach
-    </select>
-
-    <label for="payment_method">Method</label>
-    <select id="payment_method" name="payment_method">
-        <option value="">All methods</option>
-        @foreach(['cash', 'bank_transfer', 'mobile_money', 'cheque', 'other'] as $method)
-            <option value="{{ $method }}" @selected(($filters['payment_method'] ?? '') === $method)>
-                {{ str($method)->replace('_', ' ')->title() }}
-            </option>
-        @endforeach
-    </select>
-
-    <label for="date_from">Paid from</label>
-    <input id="date_from" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}">
-
-    <label for="date_to">Paid to</label>
-    <input id="date_to" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}">
-
-    <button type="submit">Filter</button>
-    @if(count(array_filter($filters, fn ($value) => $value !== null && $value !== '')) > 0 || $search !== '')
-        <a href="{{ route('payments.index') }}">Clear</a>
-    @endif
-</form>
-
-@if($payments->isEmpty())
-    <p>No payments found.</p>
-@else
-    <table>
-        <thead>
-            <tr>
-                <th>Receipt</th>
-                <th>Student</th>
-                <th>Fee</th>
-                <th>Paid date</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($payments as $payment)
-                <tr>
-                    <td>{{ $payment->receipt_number }}</td>
-                    <td>
-                        {{ $payment->student->first_name }} {{ $payment->student->last_name }}
-                        ({{ $payment->student->admission_number }})
-                    </td>
-                    <td>{{ $payment->studentFee->feeStructureItem->name }}</td>
-                    <td>{{ $payment->paid_date->format('Y-m-d') }}</td>
-                    <td>{{ str($payment->payment_method)->replace('_', ' ')->title() }}</td>
-                    <td>{{ config('library.currency', 'TZS') }} {{ number_format((float) $payment->amount, 2) }}</td>
-                    <td><span class="status-badge status-{{ $payment->status }}">{{ ucfirst($payment->status) }}</span></td>
-                    <td><a href="{{ route('payments.show', $payment) }}">Details</a></td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    {{ $payments->links() }}
-@endif
+<div class="space-y-6">
+    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Payments</h1>
+            <p class="mt-1 text-sm text-slate-600">Search recorded payments and review their status.</p>
+        </div>
+        @if(auth()->user()->hasPermission('payments.create'))
+            <a href="{{ route('payments.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><x-icon name="plus" size="sm" /> Record payment</a>
+        @endif
+    </div>
+    <x-card>
+        <form method="GET" action="{{ route('payments.index') }}" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <x-form.input name="search" label="Receipt or reference" type="search" :value="$search" />
+            <x-form.input name="student_id" label="Student ID" type="number" min="1" :value="$filters['student_id'] ?? ''" />
+            <x-form.input name="student_fee_id" label="Student fee ID" type="number" min="1" :value="$filters['student_fee_id'] ?? ''" />
+            <x-form.select name="status" label="Status">
+                <option value="">All statuses</option>
+                @foreach(['completed', 'reversed'] as $status)
+                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
+                @endforeach
+            </x-form.select>
+            <x-form.select name="payment_method" label="Method">
+                <option value="">All methods</option>
+                @foreach(['cash', 'bank_transfer', 'mobile_money', 'cheque', 'other'] as $method)
+                    <option value="{{ $method }}" @selected(($filters['payment_method'] ?? '') === $method)>{{ str($method)->replace('_', ' ')->title() }}</option>
+                @endforeach
+            </x-form.select>
+            <x-form.input name="date_from" label="Paid from" type="date" :value="$filters['date_from'] ?? ''" />
+            <x-form.input name="date_to" label="Paid to" type="date" :value="$filters['date_to'] ?? ''" />
+            <div class="flex items-end gap-2">
+                <x-button type="submit" icon="chart-bar">Filter</x-button>
+                @if(count(array_filter($filters, fn ($value) => $value !== null && $value !== '')) > 0 || $search !== '')
+                    <a href="{{ route('payments.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear</a>
+                @endif
+            </div>
+        </form>
+    </x-card>
+    <x-card>
+        <x-table.index>
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <tr><th class="px-4 py-3">Receipt</th><th class="px-4 py-3">Student</th><th class="px-4 py-3">Fee</th><th class="px-4 py-3">Paid date</th><th class="px-4 py-3">Method</th><th class="px-4 py-3">Amount</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Details</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @forelse($payments as $payment)
+                    <tr class="hover:bg-slate-50">
+                        <td class="whitespace-nowrap px-4 py-3 font-medium text-primary-700">{{ $payment->receipt_number }}</td>
+                        <td class="px-4 py-3">{{ $payment->student->first_name }} {{ $payment->student->last_name }}<div class="text-xs text-slate-500">{{ $payment->student->admission_number }}</div></td>
+                        <td class="px-4 py-3">{{ $payment->studentFee->feeStructureItem->name }}</td>
+                        <td class="whitespace-nowrap px-4 py-3">{{ $payment->paid_date->format('Y-m-d') }}</td>
+                        <td class="px-4 py-3">{{ str($payment->payment_method)->replace('_', ' ')->title() }}</td>
+                        <td class="whitespace-nowrap px-4 py-3">{{ config('library.currency', 'TZS') }} {{ number_format((float) $payment->amount, 2) }}</td>
+                        <td class="px-4 py-3"><x-badge :variant="$payment->status === 'completed' ? 'success' : 'danger'">{{ ucfirst($payment->status) }}</x-badge></td>
+                        <td class="px-4 py-3"><a href="{{ route('payments.show', $payment) }}" class="inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:underline"><x-icon name="arrow-right" size="sm" /> Details</a></td>
+                    </tr>
+                @empty
+                    <x-table.empty message="No payments found." colspan="8" />
+                @endforelse
+            </tbody>
+        </x-table.index>
+        <x-table.pagination :paginator="$payments" />
+    </x-card>
+</div>
 @endsection
