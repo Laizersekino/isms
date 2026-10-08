@@ -40,6 +40,8 @@ use App\Http\Controllers\TeacherSubjectController;
 use App\Http\Controllers\TermController;
 use App\Models\Announcement;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\DisciplinaryCaseController;
 
 // =====================================================
 // AUTHENTICATION
@@ -48,6 +50,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 })->name('home');
+// Discipline
+Route::resource('discipline', DisciplinaryCaseController::class)
+    ->parameters(['discipline' => 'disciplinaryCase']);
 
 Route::get('/login', [AuthController::class, 'showLogin'])
     ->name('login');
@@ -737,4 +742,36 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:reports.academic.export')
             ->name('class-performance.print');
     });
+    Route::middleware('auth')->group(function () {
+    // ... existing routes (profile, etc.)
+    
+    // Users & Permissions
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::get('users/{user}/permissions', [UserController::class, 'permissions'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.permissions');
+    Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.permissions.update');
+});
+// Users Management
+Route::get('users', [UserController::class, 'index'])
+    ->middleware('permission:users.manage_permissions')
+    ->name('users.index');
+
+Route::get('users/create', [UserController::class, 'create'])
+    ->middleware('permission:users.manage_permissions')
+    ->name('users.create');
+
+Route::post('users', [UserController::class, 'store'])
+    ->middleware('permission:users.manage_permissions')
+    ->name('users.store');
+
+Route::get('users/{user}/permissions', [UserController::class, 'permissions'])
+    ->middleware('permission:users.manage_permissions')
+    ->name('users.permissions');
+
+Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])
+    ->middleware('permission:users.manage_permissions')
+    ->name('users.permissions.update');
 });

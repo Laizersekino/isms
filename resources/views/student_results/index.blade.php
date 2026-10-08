@@ -55,7 +55,8 @@
     </table>
 @endif
 
-@if($selectedStudent)
+{{-- Onyesha selected student TU kama admission_number ipo kwenye request --}}
+@if($selectedStudent && request('admission_number'))
     <hr style="margin: 24px 0;">
 
     <h2>{{ $selectedStudent->first_name }} {{ $selectedStudent->last_name }} - {{ $selectedStudent->admission_number }}</h2>
@@ -111,7 +112,7 @@
     @endif
 @endif
 
-@if(!$students->isNotEmpty() && ! $selectedStudent)
+@if(!$students->isNotEmpty() && ! request('admission_number'))
     <p>No student matches your search.</p>
 @endif
 

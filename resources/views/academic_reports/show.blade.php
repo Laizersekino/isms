@@ -1,28 +1,46 @@
-@extends('layouts.crud')
+@extends('layouts.app')
+
+@section('title', 'Academic Report Card')
 
 @section('content')
-    <h1>Academic report card</h1>
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Academic Report Card</h1>
+            <p class="text-sm text-slate-600">{{ $student->first_name }} {{ $student->last_name }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <x-button variant="secondary" :href="route('academic-reports.print', ['student' => $student, 'academic_year_id' => $academicYear->id, 'term_id' => $term->id])" icon="printer" target="_blank">
+                Print
+            </x-button>
+            <x-button variant="primary" :href="route('academic-reports.pdf', ['student' => $student, 'academic_year_id' => $academicYear->id, 'term_id' => $term->id])" icon="arrow-down-tray">
+                Download PDF
+            </x-button>
+        </div>
+    </div>
 
-    <form method="GET" action="{{ route('academic-reports.show', $student) }}" class="period-filter">
-        <label for="academic_year_id">Academic year</label>
-        <select id="academic_year_id" name="academic_year_id" onchange="this.form.term_id.value = ''; this.form.submit()">
-            @foreach($academicYears as $year)
-                <option value="{{ $year->id }}" @selected((int) $year->id === (int) $academicYear->id)>{{ $year->name }}</option>
-            @endforeach
-        </select>
-        <label for="term_id">Term</label>
-        <select id="term_id" name="term_id">
-            @foreach($terms as $availableTerm)
-                <option value="{{ $availableTerm->id }}" @selected((int) $availableTerm->id === (int) $term->id)>{{ $availableTerm->name }}</option>
-            @endforeach
-        </select>
-        <button type="submit" class="primary">View report</button>
-    </form>
+    <x-card>
+        <form method="GET" action="{{ route('academic-reports.show', $student) }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <x-form.select name="academic_year_id" label="Academic Year" onchange="this.form.submit()">
+                @foreach($academicYears as $year)
+                    <option value="{{ $year->id }}" @selected((int) $year->id === (int) $academicYear->id)>{{ $year->name }}</option>
+                @endforeach
+            </x-form.select>
 
-    <p class="report-actions">
-        <a href="{{ route('academic-reports.print', ['student' => $student, 'academic_year_id' => $academicYear->id, 'term_id' => $term->id]) }}" target="_blank">Print</a>
-        <a href="{{ route('academic-reports.pdf', ['student' => $student, 'academic_year_id' => $academicYear->id, 'term_id' => $term->id]) }}">Download PDF</a>
-    </p>
+            <x-form.select name="term_id" label="Term">
+                @foreach($terms as $availableTerm)
+                    <option value="{{ $availableTerm->id }}" @selected((int) $availableTerm->id === (int) $term->id)>{{ $availableTerm->name }}</option>
+                @endforeach
+            </x-form.select>
 
-    @include('academic_reports._report_card')
+            <div class="flex items-end">
+                <x-button type="submit" variant="primary" icon="eye">
+                    View Report
+                </x-button>
+            </div>
+        </form>
+    </x-card>
+
+    <div class="mt-6">
+        @include('academic_reports._report_card')
+    </div>
 @endsection

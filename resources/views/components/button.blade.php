@@ -1,4 +1,4 @@
-@props(['type' => 'button', 'variant' => 'primary', 'icon' => null])
+@props(['type' => 'button', 'variant' => 'primary', 'icon' => null, 'href' => null])
 
 @php
     $variants = [
@@ -6,11 +6,22 @@
         'secondary' => 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400',
         'danger' => 'bg-danger-600 text-white hover:bg-danger-700 focus-visible:ring-danger-500',
     ];
+    
+    $classes = 'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm outline-none transition focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-50 ' . $variants[$variant];
 @endphp
 
-<button type="{{ $type }}" {{ $attributes->class('inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm outline-none transition focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-50 '.$variants[$variant]) }}>
-    @if($icon)
-        <x-icon :name="$icon" size="sm" />
-    @endif
-    {{ $slot }}
-</button>
+@if($href)
+    <a href="{{ $href }}" {{ $attributes->class($classes) }}>
+        @if($icon)
+            <x-icon :name="$icon" size="sm" />
+        @endif
+        {{ $slot }}
+    </a>
+@else
+    <button type="{{ $type }}" {{ $attributes->class($classes) }}>
+        @if($icon)
+            <x-icon :name="$icon" size="sm" />
+        @endif
+        {{ $slot }}
+    </button>
+@endif

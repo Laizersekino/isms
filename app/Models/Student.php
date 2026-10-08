@@ -55,4 +55,9 @@ class Student extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    public function disciplinaryCases(): HasMany
+    {
+        return $this->hasMany(DisciplinaryCase::class);
+    }
 }

@@ -29,6 +29,9 @@
         'Communication' => [
             ['Announcements', 'announcements.index', 'announcements.view', 'megaphone'],
         ],
+        'Discipline' => [
+            ['Cases', 'discipline.index', 'discipline.view', 'clipboard-document-check'],
+        ],
     ];
     $canSeeResults = $user && (
         $user->hasRole('Student')
