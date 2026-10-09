@@ -3,10 +3,6 @@
 use App\Http\Controllers\AcademicReportController;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\AnnouncementController;
-// =====================================================
-// CONTROLLERS
-// =====================================================
-
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookBorrowingController;
@@ -15,6 +11,7 @@ use App\Http\Controllers\BookCopyController;
 use App\Http\Controllers\ClassPerformanceReportController;
 use App\Http\Controllers\ClassRoomController;
 use App\Http\Controllers\ClassSubjectController;
+use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\FeeStructureController;
@@ -38,10 +35,9 @@ use App\Http\Controllers\TeacherAssignmentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\TeacherSubjectController;
 use App\Http\Controllers\TermController;
+use App\Http\Controllers\UserController;
 use App\Models\Announcement;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\DisciplinaryCaseController;
 
 // =====================================================
 // AUTHENTICATION
@@ -50,19 +46,10 @@ use App\Http\Controllers\DisciplinaryCaseController;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 })->name('home');
-// Discipline
-Route::resource('discipline', DisciplinaryCaseController::class)
-    ->parameters(['discipline' => 'disciplinaryCase']);
 
-Route::get('/login', [AuthController::class, 'showLogin'])
-    ->name('login');
-
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login.submit');
-
-Route::post('/logout', [AuthController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -70,12 +57,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/reset-password/{token}', [PasswordResetController::class, 'create'])
-    ->middleware('guest')
-    ->name('password.reset');
+    ->middleware('guest')->name('password.reset');
 
 Route::post('/reset-password', [PasswordResetController::class, 'store'])
-    ->middleware('guest')
-    ->name('password.update');
+    ->middleware('guest')->name('password.update');
 
 // =====================================================
 // DASHBOARD
@@ -83,6 +68,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'store'])
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
+
     $recentAnnouncements = Announcement::query()
         ->visible()
         ->forUser($user)
@@ -92,19 +78,58 @@ Route::get('/dashboard', function () {
         ->orderByDesc('is_pinned')
         ->orderByDesc('published_at')
         ->limit(10)
-        ->get(['id', 'title', 'content', 'category', 'is_pinned', 'published_at']);
+        ->get([
+            'id',
+            'title',
+            'content',
+            'category',
+            'is_pinned',
+            'published_at',
+        ]);
 
     return view('dashboard', compact('recentAnnouncements'));
-})
-    ->middleware('auth')
-    ->name('dashboard');
+})->middleware('auth')->name('dashboard');
+
+// =====================================================
+// USERS MANAGEMENT
+// =====================================================
+
+Route::middleware('auth')->group(function () {
+    Route::get('users', [UserController::class, 'index'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.index');
+
+    Route::get('users/create', [UserController::class, 'create'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.create');
+
+    Route::post('users', [UserController::class, 'store'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.store');
+
+    Route::get('users/{user}/permissions', [UserController::class, 'permissions'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.permissions');
+
+    Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])
+        ->middleware('permission:users.manage_permissions')
+        ->name('users.permissions.update');
+});
+
+// =====================================================
+// DISCIPLINE
+// =====================================================
+
+Route::middleware('auth')->group(function () {
+    Route::resource('discipline', DisciplinaryCaseController::class)
+        ->parameters(['discipline' => 'disciplinaryCase']);
+});
 
 // =====================================================
 // STUDENTS
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/students', [StudentController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('students.index');
@@ -132,11 +157,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('students.destroy');
-
 });
 
 // =====================================================
-// LIBRARY BOOKS
+// COMMUNICATION / ANNOUNCEMENTS
 // =====================================================
 
 Route::middleware('auth')->group(function () {
@@ -149,15 +173,14 @@ Route::middleware('auth')->group(function () {
         ->name('announcements.archive');
 });
 
+// =====================================================
+// LIBRARY
+// =====================================================
+
 Route::middleware('auth')->group(function () {
     Route::resource('books', BookController::class);
-});
-
-Route::middleware('auth')->group(function () {
     Route::resource('book-copies', BookCopyController::class);
-});
 
-Route::middleware('auth')->group(function () {
     Route::resource('book-borrowings', BookBorrowingController::class)
         ->only(['index', 'create', 'store', 'show']);
 
@@ -166,9 +189,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('book-borrowings/{bookBorrowing}/renew', [BookBorrowingController::class, 'renew'])
         ->name('book-borrowings.renew');
-});
 
-Route::middleware('auth')->group(function () {
     Route::resource('library-fines', LibraryFineController::class)
         ->only(['index', 'show']);
 
@@ -179,11 +200,14 @@ Route::middleware('auth')->group(function () {
         ->name('library-fines.waive');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::resource('fee-structures', FeeStructureController::class);
-});
+// =====================================================
+// FINANCE
+// =====================================================
 
 Route::middleware('auth')->group(function () {
+    Route::resource('fee-structures', FeeStructureController::class)
+    ->parameters(['fee-structures' => 'feeStructure']);
+
     Route::get('student-fees/generate', [StudentFeeController::class, 'generateForm'])
         ->name('student-fees.generate-form');
 
@@ -192,17 +216,13 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('student-fees', StudentFeeController::class)
         ->only(['index', 'show', 'destroy']);
-});
 
-Route::middleware('auth')->group(function () {
     Route::resource('payments', PaymentController::class)
         ->only(['index', 'create', 'store', 'show']);
 
     Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse'])
         ->name('payments.reverse');
-});
 
-Route::middleware('auth')->group(function () {
     Route::get('receipts/{payment}', [ReceiptController::class, 'show'])
         ->name('receipts.show');
 
@@ -213,32 +233,34 @@ Route::middleware('auth')->group(function () {
         ->name('receipts.print');
 });
 
-Route::middleware('auth')->prefix('reports/finance')->name('reports.finance.')->group(function () {
-    Route::get('collection-summary', [FinanceReportController::class, 'collectionSummary'])
-        ->name('collection-summary');
+Route::middleware('auth')
+    ->prefix('reports/finance')
+    ->name('reports.finance.')
+    ->group(function () {
+        Route::get('collection-summary', [FinanceReportController::class, 'collectionSummary'])
+            ->name('collection-summary');
 
-    Route::get('outstanding', [FinanceReportController::class, 'outstanding'])
-        ->name('outstanding');
+        Route::get('outstanding', [FinanceReportController::class, 'outstanding'])
+            ->name('outstanding');
 
-    Route::get('daily-collection', [FinanceReportController::class, 'dailyCollection'])
-        ->name('daily-collection');
+        Route::get('daily-collection', [FinanceReportController::class, 'dailyCollection'])
+            ->name('daily-collection');
 
-    Route::get('class-collection', [FinanceReportController::class, 'classCollection'])
-        ->name('class-collection');
+        Route::get('class-collection', [FinanceReportController::class, 'classCollection'])
+            ->name('class-collection');
 
-    Route::get('payment-methods', [FinanceReportController::class, 'paymentMethods'])
-        ->name('payment-methods');
+        Route::get('payment-methods', [FinanceReportController::class, 'paymentMethods'])
+            ->name('payment-methods');
 
-    Route::get('student-statement/{student}', [FinanceReportController::class, 'studentStatement'])
-        ->name('student-statement');
-});
+        Route::get('student-statement/{student}', [FinanceReportController::class, 'studentStatement'])
+            ->name('student-statement');
+    });
 
 // =====================================================
 // TEACHERS
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/teachers', [TeacherController::class, 'index'])
         ->middleware('permission:teachers.view')
         ->name('teachers.index');
@@ -262,7 +284,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])
         ->middleware('permission:teachers.delete')
         ->name('teachers.destroy');
-
 });
 
 // =====================================================
@@ -270,7 +291,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/staff', [StaffController::class, 'index'])
         ->middleware('permission:teachers.view')
         ->name('staff.index');
@@ -290,7 +310,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])
         ->middleware('permission:teachers.delete')
         ->name('staff.destroy');
-
 });
 
 // =====================================================
@@ -298,7 +317,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/academic-years', [AcademicYearController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('academic-years.index');
@@ -322,7 +340,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/academic-years/{academicYear}', [AcademicYearController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('academic-years.destroy');
-
 });
 
 // =====================================================
@@ -330,7 +347,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/terms', [TermController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('terms.index');
@@ -354,7 +370,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/terms/{term}', [TermController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('terms.destroy');
-
 });
 
 // =====================================================
@@ -362,7 +377,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/classes', [ClassRoomController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('classes.index');
@@ -386,7 +400,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/classes/{class}', [ClassRoomController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('classes.destroy');
-
 });
 
 // =====================================================
@@ -394,7 +407,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/streams', [StreamController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('streams.index');
@@ -418,7 +430,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/streams/{stream}', [StreamController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('streams.destroy');
-
 });
 
 // =====================================================
@@ -426,7 +437,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/subjects', [SubjectController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('subjects.index');
@@ -450,7 +460,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('subjects.destroy');
-
 });
 
 // =====================================================
@@ -458,7 +467,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/teacher-subjects', [TeacherSubjectController::class, 'index'])
         ->middleware('permission:teachers.view')
         ->name('teacher-subjects.index');
@@ -471,13 +479,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:teachers.create')
         ->name('teacher-subjects.store');
 
-    Route::delete(
-        '/teacher-subjects/{teacher}/{subject}',
-        [TeacherSubjectController::class, 'destroy']
-    )
+    Route::delete('/teacher-subjects/{teacher}/{subject}', [TeacherSubjectController::class, 'destroy'])
         ->middleware('permission:teachers.delete')
         ->name('teacher-subjects.destroy');
-
 });
 
 // =====================================================
@@ -485,7 +489,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/class-subjects', [ClassSubjectController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('class-subjects.index');
@@ -498,13 +501,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:students.create')
         ->name('class-subjects.store');
 
-    Route::delete(
-        '/class-subjects/{class}/{subject}',
-        [ClassSubjectController::class, 'destroy']
-    )
+    Route::delete('/class-subjects/{class}/{subject}', [ClassSubjectController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('class-subjects.destroy');
-
 });
 
 // =====================================================
@@ -512,7 +511,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/enrollments', [StudentEnrollmentController::class, 'index'])
         ->middleware('permission:students.view')
         ->name('enrollments.index');
@@ -536,7 +534,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/enrollments/{enrollment}', [StudentEnrollmentController::class, 'destroy'])
         ->middleware('permission:students.delete')
         ->name('enrollments.destroy');
-
 });
 
 // =====================================================
@@ -544,7 +541,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/attendance', [AttendanceController::class, 'index'])
         ->middleware('permission:attendance.view')
         ->name('attendance.index');
@@ -568,7 +564,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy'])
         ->middleware('permission:attendance.update')
         ->name('attendance.destroy');
-
 });
 
 // =====================================================
@@ -576,7 +571,6 @@ Route::middleware('auth')->group(function () {
 // =====================================================
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/teacher-assignments', [TeacherAssignmentController::class, 'index'])
         ->middleware('permission:teachers.view')
         ->name('teacher-assignments.index');
@@ -600,32 +594,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'destroy'])
         ->middleware('permission:teachers.delete')
         ->name('teacher-assignments.destroy');
-
 });
 
 // =====================================================
-// FUTURE MODULES
+// EXAMS, MARKS & RESULTS
 // =====================================================
 
-// Academic Calendar
-// Timetable
-// Exams
-// Marks
-// Results
-// Library
-// Finance
-// Reports
-// Users
-// Roles
-// Permissions
-// Parent Portal
-// Student Portal
-// Communication
-// Audit Trail
-
-// Exams
 Route::middleware('auth')->group(function () {
-
     Route::get('/exams', [ExamController::class, 'index'])
         ->middleware('permission:marks.view')
         ->name('exams.index');
@@ -649,7 +624,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])
         ->middleware('permission:marks.delete')
         ->name('exams.destroy');
-    // Exam Subjects
 
     Route::get('/exam-subjects', [ExamSubjectController::class, 'index'])
         ->middleware('permission:marks.view')
@@ -666,7 +640,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy'])
         ->middleware('permission:marks.delete')
         ->name('exam-subjects.destroy');
-    // Marks
 
     Route::get('/marks', [MarkController::class, 'index'])
         ->middleware('permission:marks.view')
@@ -679,12 +652,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/marks', [MarkController::class, 'store'])
         ->middleware('permission:marks.create')
         ->name('marks.store');
+
     Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
         ->middleware('permission:marks.approve')
         ->name('marks.approve');
-    Route::post('/marks/{mark}/approve', [MarkController::class, 'approve'])
-        ->middleware('permission:marks.approve')
-        ->name('marks.approve');
+
     Route::get('/result-publications', [ResultPublicationController::class, 'index'])
         ->middleware('permission:marks.view')
         ->name('result-publications.index');
@@ -717,61 +689,31 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:reports.academic.export')
         ->name('academic-reports.pdf');
 
-    Route::prefix('reports/academic')->name('reports.academic.')->group(function () {
-        Route::get('students/{student}', [AcademicReportController::class, 'show'])
-            ->middleware('permission:reports.academic.view')
-            ->name('student');
+    Route::prefix('reports/academic')
+        ->name('reports.academic.')
+        ->group(function () {
+            Route::get('students/{student}', [AcademicReportController::class, 'show'])
+                ->middleware('permission:reports.academic.view')
+                ->name('student');
 
-        Route::get('students/{student}/pdf', [AcademicReportController::class, 'pdf'])
-            ->middleware('permission:reports.academic.export')
-            ->name('student.pdf');
+            Route::get('students/{student}/pdf', [AcademicReportController::class, 'pdf'])
+                ->middleware('permission:reports.academic.export')
+                ->name('student.pdf');
 
-        Route::get('students/{student}/print', [AcademicReportController::class, 'print'])
-            ->middleware('permission:reports.academic.export')
-            ->name('student.print');
+            Route::get('students/{student}/print', [AcademicReportController::class, 'print'])
+                ->middleware('permission:reports.academic.export')
+                ->name('student.print');
 
-        Route::get('class-performance/{class}', [ClassPerformanceReportController::class, 'classPerformance'])
-            ->middleware('permission:reports.academic.view')
-            ->name('class-performance');
+            Route::get('class-performance/{class}', [ClassPerformanceReportController::class, 'classPerformance'])
+                ->middleware('permission:reports.academic.view')
+                ->name('class-performance');
 
-        Route::get('class-performance/{class}/pdf', [ClassPerformanceReportController::class, 'classPerformancePdf'])
-            ->middleware('permission:reports.academic.export')
-            ->name('class-performance.pdf');
+            Route::get('class-performance/{class}/pdf', [ClassPerformanceReportController::class, 'classPerformancePdf'])
+                ->middleware('permission:reports.academic.export')
+                ->name('class-performance.pdf');
 
-        Route::get('class-performance/{class}/print', [ClassPerformanceReportController::class, 'classPerformancePrint'])
-            ->middleware('permission:reports.academic.export')
-            ->name('class-performance.print');
-    });
-    Route::middleware('auth')->group(function () {
-    // ... existing routes (profile, etc.)
-    
-    // Users & Permissions
-    Route::get('users', [UserController::class, 'index'])->name('users.index');
-    Route::get('users/{user}/permissions', [UserController::class, 'permissions'])
-        ->middleware('permission:users.manage_permissions')
-        ->name('users.permissions');
-    Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])
-        ->middleware('permission:users.manage_permissions')
-        ->name('users.permissions.update');
-});
-// Users Management
-Route::get('users', [UserController::class, 'index'])
-    ->middleware('permission:users.manage_permissions')
-    ->name('users.index');
-
-Route::get('users/create', [UserController::class, 'create'])
-    ->middleware('permission:users.manage_permissions')
-    ->name('users.create');
-
-Route::post('users', [UserController::class, 'store'])
-    ->middleware('permission:users.manage_permissions')
-    ->name('users.store');
-
-Route::get('users/{user}/permissions', [UserController::class, 'permissions'])
-    ->middleware('permission:users.manage_permissions')
-    ->name('users.permissions');
-
-Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])
-    ->middleware('permission:users.manage_permissions')
-    ->name('users.permissions.update');
+            Route::get('class-performance/{class}/print', [ClassPerformanceReportController::class, 'classPerformancePrint'])
+                ->middleware('permission:reports.academic.export')
+                ->name('class-performance.print');
+        });
 });

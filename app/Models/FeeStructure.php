@@ -20,6 +20,9 @@ class FeeStructure extends Model
         'description',
         'total_amount',
         'status',
+        'payment_plan',
+        'installment_count',
+        'installment_amount',
         'created_by',
     ];
 
@@ -27,6 +30,8 @@ class FeeStructure extends Model
     {
         return [
             'total_amount' => 'decimal:2',
+            'installment_amount' => 'decimal:2',
+            'installment_count' => 'integer',
             'deleted_at' => 'datetime',
         ];
     }

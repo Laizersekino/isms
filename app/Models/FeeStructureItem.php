@@ -12,6 +12,8 @@ class FeeStructureItem extends Model
         'name',
         'amount',
         'is_mandatory',
+        'due_date',
+        'order',
         'description',
     ];
 
@@ -20,6 +22,8 @@ class FeeStructureItem extends Model
         return [
             'amount' => 'decimal:2',
             'is_mandatory' => 'boolean',
+            'due_date' => 'date',
+            'order' => 'integer',
         ];
     }
 

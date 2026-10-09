@@ -143,7 +143,7 @@
             @endif
         </section>
 
-        {{-- Grade Distribution --}}
+        {{-- Grade distribution --}}
         <section class="mb-6">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Grade Distribution</h3>
             <div class="overflow-x-auto rounded-xl border border-slate-200">

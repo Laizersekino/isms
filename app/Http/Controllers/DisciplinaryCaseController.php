@@ -6,10 +6,22 @@ use App\Models\DisciplinaryCase;
 use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\View\View;
 
-class DisciplinaryCaseController extends Controller
+class DisciplinaryCaseController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:discipline.view', only: ['index', 'show']),
+            new Middleware('permission:discipline.create', only: ['create', 'store']),
+            new Middleware('permission:discipline.update', only: ['edit', 'update']),
+            new Middleware('permission:discipline.delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request): View
     {
         $query = DisciplinaryCase::with(['student', 'reportedBy', 'createdBy']);
@@ -75,8 +87,10 @@ class DisciplinaryCaseController extends Controller
         return view('discipline.edit', compact('disciplinaryCase', 'students'));
     }
 
-    public function update(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        DisciplinaryCase $disciplinaryCase
+    ): RedirectResponse {
         $validated = $request->validate([
             'student_id' => ['required', 'exists:students,id'],
             'offence_type' => ['required', 'string', 'max:255'],

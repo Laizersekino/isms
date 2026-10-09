@@ -23,11 +23,21 @@
     </x-form.select>
 
     <x-form.input name="name" label="Name" maxlength="255" :value="$feeStructure?->name" required />
+
     <x-form.select name="status" label="Status" required>
         @foreach(['draft', 'active', 'archived'] as $status)
             <option value="{{ $status }}" @selected(old('status', $feeStructure?->status ?? 'draft') === $status)>{{ ucfirst($status) }}</option>
         @endforeach
     </x-form.select>
+
+    <x-form.select name="payment_plan" label="Payment Plan" required>
+        @foreach(['full' => 'Full Payment', 'termly' => 'Termly (3 installments)', 'monthly' => 'Monthly', 'custom' => 'Custom'] as $value => $label)
+            <option value="{{ $value }}" @selected(old('payment_plan', $feeStructure?->payment_plan ?? 'termly') === $value)>{{ $label }}</option>
+        @endforeach
+    </x-form.select>
+
+    <x-form.input name="installment_count" label="Installment Count" type="number" min="1" max="12" :value="old('installment_count', $feeStructure?->installment_count ?? 3)" />
+
     <div class="md:col-span-2 xl:col-span-3">
         <x-form.textarea name="description" label="Description" maxlength="2000" :value="$feeStructure?->description" rows="3" />
     </div>
@@ -57,6 +67,16 @@
                         <label for="item-{{ $index }}-amount" class="block text-sm font-medium text-slate-700">Amount ({{ config('library.currency', 'TZS') }})</label>
                         <input id="item-{{ $index }}-amount" type="number" data-field="amount" name="items[{{ $index }}][amount]" min="0" step="0.01" value="{{ $item['amount'] ?? '' }}" required class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
                         <x-form.error :name="'items.'.$index.'.amount'" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="item-{{ $index }}-due_date" class="block text-sm font-medium text-slate-700">Due date</label>
+                        <input id="item-{{ $index }}-due_date" type="date" data-field="due_date" name="items[{{ $index }}][due_date]" value="{{ $item['due_date'] ?? '' }}" class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
+                        <x-form.error :name="'items.'.$index.'.due_date'" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="item-{{ $index }}-order" class="block text-sm font-medium text-slate-700">Order</label>
+                        <input id="item-{{ $index }}-order" type="number" data-field="order" name="items[{{ $index }}][order]" min="0" value="{{ $item['order'] ?? $index }}" class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
+                        <x-form.error :name="'items.'.$index.'.order'" />
                     </div>
                     <div class="space-y-1.5 sm:col-span-2">
                         <label for="item-{{ $index }}-description" class="block text-sm font-medium text-slate-700">Description</label>
@@ -92,6 +112,14 @@
             <div class="space-y-1.5">
                 <label class="block text-sm font-medium text-slate-700">Amount ({{ config('library.currency', 'TZS') }})</label>
                 <input type="number" data-field="amount" min="0" step="0.01" required class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-sm font-medium text-slate-700">Due date</label>
+                <input type="date" data-field="due_date" class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-sm font-medium text-slate-700">Order</label>
+                <input type="number" data-field="order" min="0" class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-100">
             </div>
             <div class="space-y-1.5 sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-700">Description</label>

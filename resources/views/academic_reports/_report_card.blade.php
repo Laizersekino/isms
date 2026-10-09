@@ -72,7 +72,7 @@
                 <p class="text-sm"><strong class="text-slate-700">Total:</strong> <span class="text-slate-900">{{ number_format($totalMarks, 2) }} / {{ number_format($maximumMarks, 2) }}</span></p>
                 <p class="text-sm"><strong class="text-slate-700">Average:</strong> <span class="text-slate-900">{{ number_format($percentage, 2) }}%</span></p>
                 <p class="text-sm"><strong class="text-slate-700">Overall Grade:</strong> <x-badge variant="success">{{ $overallGrade }}</x-badge></p>
-                <p class="text-sm"><strong class="text-slate-700">Class Rank:</strong> <span class="text-slate-900">{{ $rank ? $rank.' / '.$classSize : 'N/A' }}</span></p>
+                <p class="text-sm"><strong class="text-slate-700">Class rank:</strong> <span class="text-slate-900">{{ $rank ? $rank.' / '.$classSize : 'N/A' }}</span></p>
             </div>
         </div>
 

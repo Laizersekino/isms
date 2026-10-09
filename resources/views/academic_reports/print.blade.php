@@ -4,7 +4,7 @@
 
 @section('content')
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; margin: 20px; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; margin: 20px auto; max-width: 900px; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; margin: 0; }
         .header h2 { font-size: 14px; margin: 5px 0 0 0; color: #666; }

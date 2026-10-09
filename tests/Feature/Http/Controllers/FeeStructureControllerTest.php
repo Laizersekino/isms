@@ -412,6 +412,8 @@ class FeeStructureControllerTest extends TestCase
             'description' => 'Standard term fees.',
             'total_amount' => 75000,
             'status' => 'draft',
+            'payment_plan' => 'termly',
+            'installment_count' => 3,
             'created_by' => $user->id,
         ], $overrides));
 
@@ -442,6 +444,8 @@ class FeeStructureControllerTest extends TestCase
             'name' => 'Form 1 Term 1 Fees 2026',
             'description' => 'Standard term fees.',
             'status' => 'draft',
+            'payment_plan' => 'termly',
+            'installment_count' => 3,
             'items' => [
                 [
                     'name' => 'Tuition',

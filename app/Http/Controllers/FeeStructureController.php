@@ -19,6 +19,7 @@ use Illuminate\Validation\ValidationException;
 class FeeStructureController extends Controller implements HasMiddleware
 {
     private const STATUSES = ['draft', 'active', 'archived'];
+    private const PAYMENT_PLANS = ['full', 'termly', 'monthly', 'custom'];
 
     public static function middleware(): array
     {
@@ -86,6 +87,8 @@ class FeeStructureController extends Controller implements HasMiddleware
             ]);
             $feeStructure->items()->createMany($validated['items']);
             $feeStructure->recalculateTotal();
+            $feeStructure->refresh();
+            $this->applyInstallmentCalculation($feeStructure, $validated);
 
             return $feeStructure;
         });
@@ -130,6 +133,8 @@ class FeeStructureController extends Controller implements HasMiddleware
             $lockedStructure->items()->delete();
             $lockedStructure->items()->createMany($validated['items']);
             $lockedStructure->recalculateTotal();
+            $lockedStructure->refresh();
+            $this->applyInstallmentCalculation($lockedStructure, $validated);
         });
 
         return redirect()
@@ -191,10 +196,14 @@ class FeeStructureController extends Controller implements HasMiddleware
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'status' => ['required', Rule::in(self::STATUSES)],
+            'payment_plan' => ['required', Rule::in(self::PAYMENT_PLANS)],
+            'installment_count' => ['nullable', 'integer', 'min:1', 'max:12'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.name' => ['required', 'string', 'max:100'],
             'items.*.amount' => ['required', 'numeric', 'min:0'],
             'items.*.is_mandatory' => ['sometimes', 'boolean'],
+            'items.*.due_date' => ['nullable', 'date'],
+            'items.*.order' => ['nullable', 'integer'],
             'items.*.description' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -208,7 +217,26 @@ class FeeStructureController extends Controller implements HasMiddleware
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'],
+            'payment_plan' => $validated['payment_plan'],
+            'installment_count' => $validated['installment_count'] ?? 3,
         ];
+    }
+
+    private function applyInstallmentCalculation(FeeStructure $feeStructure, array $validated): void
+    {
+        $plan = $validated['payment_plan'];
+        $count = (int) ($validated['installment_count'] ?? 3);
+
+        if ($plan === 'full') {
+            $count = 1;
+        }
+
+        $feeStructure->update([
+            'installment_count' => $count,
+            'installment_amount' => $count > 0
+                ? round((float) $feeStructure->total_amount / $count, 2)
+                : null,
+        ]);
     }
 
     private function assertCombinationAvailable(
